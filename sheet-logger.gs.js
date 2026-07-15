@@ -9,7 +9,7 @@
 const HEADERS = [
   'timestamp', 'sessionId', 'playNumber', 'rowType', 'chapter',
   'trialNumber', 'trueValue', 'response', 'reactionTimeMs',
-  'age', 'gender', 'nfcScore', 'ch1Drift', 'ch2Drift',
+  'age', 'gender', 'priorParticipation', 'nfcScore', 'ch1Drift', 'ch2Drift',
 ];
 
 function doPost(e) {

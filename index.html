@@ -153,6 +153,20 @@
       </div>
     </section>
 
+    <section class="screen" id="screen-prior-participation">
+      <h2>One more question</h2>
+      <p>Before we show your results, a quick methodological check:</p>
+      <p><strong>Have you played Concept Creep, or taken part in this study, before?</strong></p>
+      <div class="likert-scale" style="max-width:360px;">
+        <label><input type="radio" name="prior-participation" value="no"> No</label>
+        <label><input type="radio" name="prior-participation" value="yes"> Yes</label>
+        <label><input type="radio" name="prior-participation" value="unsure"> Not sure</label>
+      </div>
+      <div class="btn-row">
+        <button onclick="submitPriorParticipation()">Continue</button>
+      </div>
+    </section>
+
     <section class="screen" id="screen-nfc-intro">
       <h2>One optional bonus round</h2>
       <p>Some people may resist this kind of drift more than others. One
@@ -256,6 +270,7 @@ let currentLog = [];
 const chapterResults = {};
 let nfcScore = null;
 let demographics = { age: null, gender: null };
+let priorParticipation = null;
 
 // This placeholder is substituted with the real Google Apps Script Web App URL at deploy
 // time by .github/workflows/deploy.yml, which reads it from the SHEET_WEBHOOK_URL repository
@@ -604,7 +619,7 @@ function afterReveal(){
   if(current.id === 'ch1'){
     startChapter('ch2');
   } else {
-    showScreen('nfc-intro');
+    showScreen('prior-participation');
   }
 }
 
@@ -624,6 +639,13 @@ function renderNFCItems(){
   `).join('');
 }
 renderNFCItems();
+
+function submitPriorParticipation(){
+  const checked = document.querySelector('input[name="prior-participation"]:checked');
+  if(!checked){ alert('Please select an answer before continuing.'); return; }
+  priorParticipation = checked.value;
+  showScreen('nfc-intro');
+}
 
 function submitNFC(){
   const values = [];
@@ -662,6 +684,7 @@ function goToSummary(){
   sendRowsToSheet([{
     timestamp: new Date().toISOString(), sessionId, playNumber, rowType: 'summary',
     age: demographics.age || '', gender: demographics.gender || '',
+    priorParticipation: priorParticipation || '',
     nfcScore: nfcScore===null ? '' : nfcScore,
     ch1Drift: ch1 ? ch1.drift : '', ch2Drift: ch2 ? ch2.drift : '',
   }]);
