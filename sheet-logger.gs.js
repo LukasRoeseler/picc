@@ -7,7 +7,7 @@
 // order; any key missing from a given payload is just left blank.
 
 const HEADERS = [
-  'timestamp', 'sessionId', 'rowType', 'chapter',
+  'timestamp', 'sessionId', 'playNumber', 'rowType', 'chapter',
   'trialNumber', 'trueValue', 'response', 'reactionTimeMs',
   'age', 'gender', 'nfcScore', 'ch1Drift', 'ch2Drift',
 ];

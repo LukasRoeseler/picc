@@ -90,9 +90,10 @@
       <p>Data is stored online via Google Sheets and may be published on Zenodo or OSF
       under a CC-BY license for at least ten years. Collected data includes your
       responses, response times, and demographics (age, gender). At the end you'll be
-      shown an anonymous session code — you can request deletion of your data by
-      emailing the contact person below with that code, which will result in it not
-      being included in the published dataset. Feel free to reach out if you have any
+      shown an anonymous participant code (the same one every time you play from this
+      device) — you can request deletion of your data by emailing the contact person
+      below with that code, which will result in it not being included in the published
+      dataset. Feel free to reach out if you have any
       questions about this project.</p>
       <p>Contact person: lukas.roeseler [at] uni-muenster [dot] de</p>
       <label style="display:flex; align-items:flex-start; gap:10px; margin:18px 0; cursor:pointer;">
@@ -203,8 +204,9 @@
       <p class="muted">Real studies average this effect across dozens of
       participants and hundreds of trials — a single noisy session like this
       one can land anywhere. Replay to see how much your own numbers vary.</p>
-      <p class="muted">Your anonymous session code (reference this if you ever want your
-      data deleted): <strong id="summary-code"></strong></p>
+      <p class="muted">Your anonymous participant code — stays the same if you play again from
+      this device, so repeat play-throughs can be linked together. Reference it if you ever
+      want your data deleted: <strong id="summary-code"></strong></p>
       <div class="btn-row">
         <button onclick="location.reload()">Play again</button>
       </div>
@@ -261,7 +263,29 @@ let demographics = { age: null, gender: null };
 // placeholder is ever left unsubstituted), sendRowsToSheet() below just no-ops.
 const SHEET_WEBHOOK_URL = '__SHEET_WEBHOOK_URL__';
 
-const sessionId = (crypto.randomUUID ? crypto.randomUUID() : ('sid-' + Math.random().toString(36).slice(2) + Date.now()));
+// A returning player (same browser, localStorage not cleared) keeps the same sessionId across
+// repeat play-throughs, so their rows in the sheet can be linked together. playNumber tells
+// them apart (1st visit, 2nd visit, ...). A fresh incognito window or cleared site data will
+// generate a new sessionId — there's no way around that without requiring a login.
+function getPersistentId(){
+  const key = 'conceptCreepSessionId';
+  let id = localStorage.getItem(key);
+  if(!id){
+    id = crypto.randomUUID ? crypto.randomUUID() : ('sid-' + Math.random().toString(36).slice(2) + Date.now());
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+function getAndBumpPlayNumber(){
+  const key = 'conceptCreepPlayNumber';
+  const n = parseInt(localStorage.getItem(key) || '0', 10) + 1;
+  localStorage.setItem(key, String(n));
+  return n;
+}
+
+const sessionId = getPersistentId();
+const playNumber = getAndBumpPlayNumber();
 
 function sendRowsToSheet(rows){
   if(!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.startsWith('__') || !rows || !rows.length) return;
@@ -276,7 +300,7 @@ function sendRowsToSheet(rows){
 function sendChapterDataToSheet(config, log){
   const rows = log.filter(e=>!e.synthetic).map(e=>({
     timestamp: new Date().toISOString(),
-    sessionId, rowType: 'trial', chapter: config.id,
+    sessionId, playNumber, rowType: 'trial', chapter: config.id,
     trialNumber: e.trial, trueValue: e.level,
     response: e.resp ? config.labelYes : config.labelNo,
     reactionTimeMs: Math.round(e.rt),
@@ -636,7 +660,7 @@ function goToSummary(){
   document.getElementById('summary-code').textContent = sessionId;
 
   sendRowsToSheet([{
-    timestamp: new Date().toISOString(), sessionId, rowType: 'summary',
+    timestamp: new Date().toISOString(), sessionId, playNumber, rowType: 'summary',
     age: demographics.age || '', gender: demographics.gender || '',
     nfcScore: nfcScore===null ? '' : nfcScore,
     ch1Drift: ch1 ? ch1.drift : '', ch2Drift: ch2 ? ch2.drift : '',
