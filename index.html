@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept Creep</title>
+<style>
+  :root{
+    --bg:#808080; --panel:transparent; --card:#d6d6d6; --text:#111111; --muted:#444444;
+    --accent:#1a1a1a; --accent2:#555555; --good:#1a1a1a; --line:#aaaaaa;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    display:flex; justify-content:center; padding:24px 16px;
+  }
+  .app{ width:100%; max-width:720px; }
+  .panel{ background:var(--panel); padding:12px; }
+  h1{ font-size:1.4em; margin:0 0 8px; font-weight:700; }
+  h2{ font-size:1.15em; margin:0 0 12px; color:var(--text); font-weight:700; }
+  p{ line-height:1.55; color:var(--text); }
+  .muted{ color:var(--muted); font-size:0.92em; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+  button{
+    font:inherit; cursor:pointer; border:1px solid #1a1a1a; border-radius:3px; padding:12px 20px;
+    background:#ffffff; color:#111111; font-weight:600;
+  }
+  button:hover{ background:#ececec; }
+  button:active{ background:#dcdcdc; }
+  button.secondary{ background:transparent; color:var(--muted); border:1px solid var(--line); }
+  .btn-row{ display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; }
+  .progress-track{ height:6px; background:#c2c2c2; border-radius:3px; overflow:hidden; margin-bottom:18px; }
+  .progress-fill{ height:100%; background:var(--accent); width:0%; transition:width .2s ease; }
+  #trial-counter{ text-align:center; color:var(--muted); font-size:0.85em; margin-bottom:10px; }
+  .stimulus-card{
+    background:var(--card); border:1px solid var(--line); border-radius:3px; height:260px; display:flex; align-items:center;
+    justify-content:center; margin:8px 0 22px;
+  }
+  .stimulus-card.road-mode{ background:none; padding:0; overflow:hidden; }
+  .road-scene{ position:relative; width:100%; height:100%; border-radius:14px; overflow:hidden; }
+  .road-scene .sky{ position:absolute; top:0; left:0; right:0; height:25%; background:linear-gradient(#8fd0ff,#d7ecff); }
+  .road-scene .ground{ position:absolute; top:25%; left:0; right:0; height:8%; background:#5b8f4f; }
+  .road-scene .road{ position:absolute; top:33%; left:0; right:0; bottom:0; background:#3a3f46; }
+  .road-scene .lane{
+    position:absolute; top:50%; left:0; right:0; height:5px; margin-top:-2px;
+    background-image:repeating-linear-gradient(90deg,#fff 0 26px, transparent 26px 52px);
+    animation:laneMove 0.7s linear infinite;
+  }
+  @keyframes laneMove{ from{background-position-x:0;} to{background-position-x:-52px;} }
+  .car-el{
+    position:absolute; left:50%; bottom:8px; margin-left:-150px;
+    animation:driveIn 0.5s ease-out forwards;
+  }
+  .car-el.drive-out{ animation:driveOut 0.4s ease-in forwards; }
+  @keyframes driveIn{ from{ transform:translateX(-420px); } to{ transform:translateX(0); } }
+  @keyframes driveOut{ from{ transform:translateX(0); } to{ transform:translateX(420px); } }
+  .wheel{ transform-box:fill-box; transform-origin:center; animation:wheelSpin 0.6s linear infinite; }
+  @keyframes wheelSpin{ to{ transform:rotate(360deg); } }
+  .judge-buttons{ display:flex; gap:14px; }
+  .judge-buttons button{ flex:1; padding:20px; font-size:1.05em; background:#ffffff; color:#111111; }
+  .hotkey{ opacity:0.6; font-weight:400; font-size:0.85em; }
+  .chart-wrap{ overflow-x:auto; margin:16px 0; }
+  .likert{ margin:18px 0; padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .likert p{ margin:0 0 8px; }
+  .likert-scale{ display:flex; gap:8px; }
+  .likert-scale label{ flex:1; text-align:center; font-size:0.8em; color:var(--muted); cursor:pointer; }
+  .likert-scale input{ display:block; margin:0 auto 4px; }
+  .stat-grid{ display:flex; gap:16px; flex-wrap:wrap; margin:16px 0; }
+  .stat-box{ background:#ffffff; border:1px solid var(--line); border-radius:3px; padding:14px 18px; flex:1; min-width:160px; }
+  .stat-box .num{ font-size:1.5em; font-weight:700; color:var(--good); }
+  .stat-box .label{ font-size:0.8em; color:var(--muted); }
+  a{ color:var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+
+    <section class="screen active" id="screen-consent">
+      <h1>Participant Consent</h1>
+      <p>By playing <strong>Concept Creep</strong>, you are granting us permission to
+      collect data from you. We will do so in a way that does not permit us to
+      identify players. Participation is voluntary. You must be at least 18 years old
+      to participate. You can revoke your consent to participate at any time and
+      without giving reasons, without any disadvantage to you.</p>
+      <p>Data is stored online via Google Sheets and may be published on Zenodo or OSF
+      under a CC-BY license for at least ten years. Collected data includes your
+      responses, response times, and demographics (age, gender). At the end you'll be
+      shown an anonymous session code — you can request deletion of your data by
+      emailing the contact person below with that code, which will result in it not
+      being included in the published dataset. Feel free to reach out if you have any
+      questions about this project.</p>
+      <p>Contact person: lukas.roeseler [at] uni-muenster [dot] de</p>
+      <label style="display:flex; align-items:flex-start; gap:10px; margin:18px 0; cursor:pointer;">
+        <input type="checkbox" id="consent-checkbox" style="margin-top:4px;"
+          onchange="document.getElementById('consent-continue').disabled = !this.checked;">
+        <span>I have read and understood the information above, and I agree to participate.</span>
+      </label>
+      <div class="btn-row">
+        <button id="consent-continue" disabled onclick="showScreen('intro')">I Agree &amp; Play</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-intro">
+      <h1>Concept Creep</h1>
+      <p>In 2018, psychologists found something strange: when a category becomes
+      rarer, people don't just notice less of it — their <em>concept</em> of it
+      quietly expands. Show people fewer blue dots, and they start calling
+      borderline purple dots "blue" too. Tell them the rules won't change,
+      pay them to stay consistent, warn them in advance — the drift still
+      creeps in.</p>
+      <p>This is a two-chapter replication of that effect
+      (<em>prevalence-induced concept change</em>, Levari et al., 2018) —
+      played on you, with your own responses as the data.</p>
+      <p class="muted">Your responses are sent anonymously for research purposes, as
+      described in the consent you just gave.</p>
+      <div class="btn-row">
+        <button onclick="startChapter('ch1')">Start Chapter 1</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-instructions">
+      <h2 id="instr-title"></h2>
+      <p id="instr-text"></p>
+      <p class="muted" id="instr-labels"></p>
+      <div class="btn-row">
+        <button onclick="beginTrials()">Begin</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-trial">
+      <div id="trial-counter"></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="stimulus-card" id="stimulus-area"></div>
+      <div class="judge-buttons">
+        <button id="btn-yes" onclick="respond(true)"></button>
+        <button class="no" id="btn-no" onclick="respond(false)"></button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-reveal">
+      <h2 id="reveal-title"></h2>
+      <div class="chart-wrap" id="reveal-chart"></div>
+      <div class="stat-grid" id="reveal-stats"></div>
+      <p id="reveal-text"></p>
+      <div class="btn-row">
+        <button id="reveal-continue" onclick="afterReveal()">Continue</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-nfc-intro">
+      <h2>One optional bonus round</h2>
+      <p>Some people may resist this kind of drift more than others. One
+      candidate: <strong>Need for Cognition</strong> — a trait describing how
+      much someone enjoys effortful, deliberate thinking. The idea is that this
+      bias comes from a low-effort, automatic recalibration of your judgment
+      criterion; people who habitually think things through more might be more
+      likely to notice the shifting rules and correct for it, showing less drift.</p>
+      <p class="muted">The 6 items below are an informal adaptation inspired by
+      the Need for Cognition construct (Cacioppo &amp; Petty, 1982) written for
+      this game — not the validated instrument, and with one player this can't
+      test any real correlation. It's just a personal data point to compare
+      against your own drift scores above.</p>
+      <div class="btn-row">
+        <button onclick="showScreen('nfc-form')">Take it (2 min)</button>
+        <button class="secondary" onclick="goToSummary()">Skip</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-nfc-form">
+      <h2>Quick check</h2>
+      <div class="likert">
+        <p>Age</p>
+        <input type="number" id="demo-age" min="18" max="120" placeholder="e.g. 29"
+          style="width:120px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);">
+      </div>
+      <div class="likert">
+        <p>Gender</p>
+        <select id="demo-gender" style="padding:8px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line);">
+          <option value="" selected disabled>Select…</option>
+          <option value="female">Female</option>
+          <option value="male">Male</option>
+          <option value="non-binary">Non-binary</option>
+          <option value="self-describe">Self-describe</option>
+          <option value="prefer_not_to_say">Prefer not to say</option>
+        </select>
+      </div>
+      <p class="muted">1 = strongly disagree · 5 = strongly agree</p>
+      <div id="nfc-items"></div>
+      <div class="btn-row">
+        <button onclick="submitNFC()">Done</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-summary">
+      <h2>Your session</h2>
+      <div class="stat-grid" id="summary-stats"></div>
+      <p id="summary-text"></p>
+      <p class="muted">Real studies average this effect across dozens of
+      participants and hundreds of trials — a single noisy session like this
+      one can land anywhere. Replay to see how much your own numbers vary.</p>
+      <p class="muted">Your anonymous session code (reference this if you ever want your
+      data deleted): <strong id="summary-code"></strong></p>
+      <div class="btn-row">
+        <button onclick="location.reload()">Play again</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const CHAPTERS = {
+  ch1: {
+    id:'ch1',
+    title:'Chapter 1 — Chroma Watch',
+    instrText:'Dots will appear one at a time, somewhere between blue and purple. Decide if each one is BLUE or NOT BLUE. There is no trick to look for — just go with your gut, as naturally and quickly as you can.',
+    labelYes:'BLUE', labelNo:'NOT BLUE',
+    rareLabel:'blue', commonLabel:'purple',
+    render: renderDot,
+    animated:false,
+    n:400, changeTrial:200, pBefore:0.5, pAfter:0.06,
+  },
+  ch2: {
+    id:'ch2',
+    title:'Chapter 2 — Motor Pool',
+    instrText:'Cars will roll by one at a time, somewhere between a family car and a sports car. Decide if each one is a SPORTS CAR or NOT. Go with your gut — the car drives off as soon as you answer.',
+    labelYes:'SPORTS CAR', labelNo:'NOT SPORTS CAR',
+    rareLabel:'sports car', commonLabel:'family car',
+    render: renderCar,
+    animated:true,
+    n:400, changeTrial:200, pBefore:0.5, pAfter:0.06,
+  }
+};
+
+const isMobile = /Android|iPhone|iPad|iPod|Mobile|webOS/i.test(navigator.userAgent) ||
+  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+const NFC_ITEMS = [
+  {text:"I really enjoy a task that involves coming up with new solutions to problems.", reverse:false},
+  {text:"Thinking is not my idea of fun.", reverse:true},
+  {text:"I'd rather do something that requires little thought than something that will surely challenge my thinking abilities.", reverse:true},
+  {text:"I prefer tasks that are simple and straightforward over ones that are complex and puzzling.", reverse:true},
+  {text:"The idea of relying on careful thought to work through a problem really appeals to me.", reverse:false},
+  {text:"I prefer complex problems to simple ones.", reverse:false},
+];
+
+let current = null, schedule = [], idx = 0, trialStart = 0, pendingLevel = 0;
+let currentLog = [];
+const chapterResults = {};
+let nfcScore = null;
+let demographics = { age: null, gender: null };
+
+// Paste your deployed Google Apps Script Web App URL here (Extensions > Apps Script in your
+// Sheet, paste the doPost handler from PICC/sheet-logger.gs.js, Deploy > New deployment >
+// Web app, access "Anyone", copy the resulting /exec URL below). Left blank, no data is sent
+// anywhere — the game still works fully offline.
+const SHEET_WEBHOOK_URL = '';
+
+const sessionId = (crypto.randomUUID ? crypto.randomUUID() : ('sid-' + Math.random().toString(36).slice(2) + Date.now()));
+
+function sendRowsToSheet(rows){
+  if(!SHEET_WEBHOOK_URL || !rows || !rows.length) return;
+  fetch(SHEET_WEBHOOK_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify(rows)
+  }).catch(()=>{});
+}
+
+function sendChapterDataToSheet(config, log){
+  const rows = log.filter(e=>!e.synthetic).map(e=>({
+    timestamp: new Date().toISOString(),
+    sessionId, rowType: 'trial', chapter: config.id,
+    trialNumber: e.trial, trueValue: e.level,
+    response: e.resp ? config.labelYes : config.labelNo,
+    reactionTimeMs: Math.round(e.rt),
+  }));
+  sendRowsToSheet(rows);
+}
+
+function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+
+function gaussianRandom(){
+  let u=0, v=0;
+  while(u===0) u = Math.random();
+  while(v===0) v = Math.random();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+
+function buildSchedule(n, changeTrial, pBefore, pAfter){
+  const levels = [];
+  for(let i=0;i<n;i++){
+    const prevalenceRare = i < changeTrial ? pBefore : pAfter;
+    const useRare = Math.random() < prevalenceRare;
+    const mean = useRare ? 0.8 : 0.2;
+    const v = mean + gaussianRandom()*0.16;
+    levels.push(clamp(v,0,1));
+  }
+  return levels;
+}
+
+function fitPSE(pairs){
+  let a = 6, b = 0.5;
+  const lr = 0.15;
+  for(let iter=0; iter<300; iter++){
+    let gradA=0, gradB=0;
+    for(const {level,resp} of pairs){
+      const z = clamp(a*(level-b), -30, 30);
+      const p = 1/(1+Math.exp(-z));
+      const err = p - resp;
+      gradA += err*(level-b);
+      gradB += err*(-a);
+    }
+    gradA /= pairs.length; gradB /= pairs.length;
+    a = clamp(a - lr*gradA, 0.5, 25);
+    b = clamp(b - lr*gradB, 0, 1);
+  }
+  return {a,b};
+}
+
+function computeWindows(log, windowSize, step){
+  const windows = [];
+  for(let start=0; start+windowSize<=log.length; start+=step){
+    const slice = log.slice(start, start+windowSize).map(e=>({level:e.level, resp:e.resp}));
+    const {b} = fitPSE(slice);
+    windows.push({center: start+windowSize/2, pse:b});
+  }
+  return windows;
+}
+
+function renderDot(level){
+  const hue = 285 - 60*level;
+  const color = `hsl(${hue},70%,55%)`;
+  return `<svg width="180" height="180" viewBox="0 0 180 180">
+    <circle cx="90" cy="90" r="70" fill="${color}"/>
+  </svg>`;
+}
+
+const CAR_FAMILY = [
+  [20,115],[20,95],[70,45],[150,45],[190,70],[260,95],[280,100],[280,118],[240,125],[60,125]
+];
+const CAR_SPORTS = [
+  [20,120],[20,110],[70,75],[150,70],[190,95],[260,110],[280,112],[280,122],[240,128],[60,128]
+];
+
+function lerpPt(a,b,t){ return [lerp(a[0],b[0],t), lerp(a[1],b[1],t)]; }
+
+function wheelSVG(cx, cy, r){
+  const spokes = [0,72,144,216,288].map(a=>{
+    const rad = a*Math.PI/180;
+    return `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(rad)*r*0.75}" y2="${cy+Math.sin(rad)*r*0.75}" stroke="#8a8f98" stroke-width="1.5"/>`;
+  }).join('');
+  return `<g class="wheel">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#161616" stroke="#050505" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${r*0.55}" fill="#c8ccd2" stroke="#8a8f98" stroke-width="1"/>
+    ${spokes}
+    <circle cx="${cx}" cy="${cy}" r="${r*0.12}" fill="#555"/>
+  </g>`;
+}
+
+function renderCar(level){
+  const pts = CAR_FAMILY.map((p,i)=>lerpPt(p, CAR_SPORTS[i], level));
+  const path = 'M ' + pts.map(p=>p.join(',')).join(' L ') + ' Z';
+  const hue = lerp(220,0,level);
+  const sat = lerp(15,75,level);
+  const light = lerp(55,45,level);
+  const bodyColor = `hsl(${hue},${sat}%,${light}%)`;
+  const wheelR = lerp(16,20,level);
+  const wheelY = 138 - wheelR;
+  const spoilerH = 14*level;
+
+  const rearBelt = lerpPt(pts[1], pts[2], 0.45);
+  const frontBelt = pts[4];
+  const windowPath = `M ${rearBelt.join(',')} L ${pts[2].join(',')} L ${pts[3].join(',')} L ${frontBelt.join(',')} Z`;
+  const topDiv = lerpPt(pts[2], pts[3], 0.45);
+  const botDiv = lerpPt(rearBelt, frontBelt, 0.45);
+
+  const headlightY = (pts[6][1]+pts[7][1])/2;
+  const taillightY = (pts[0][1]+pts[1][1])/2;
+
+  return `<svg class="car-el" width="300" height="150" viewBox="0 0 300 150">
+    <path d="${path}" fill="${bodyColor}" stroke="#1a1a1a" stroke-width="2"/>
+    <path d="${windowPath}" fill="#bfe3f5" fill-opacity="0.75" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="${topDiv[0]}" y1="${topDiv[1]}" x2="${botDiv[0]}" y2="${botDiv[1]}" stroke="#1a1a1a" stroke-width="1.5"/>
+    ${spoilerH>1 ? `<rect x="18" y="${95-spoilerH}" width="26" height="${spoilerH}" fill="#222"/>` : ''}
+    <ellipse cx="${pts[6][0]-4}" cy="${headlightY}" rx="6" ry="4.5" fill="#fff6c9" stroke="#c9b56b" stroke-width="1"/>
+    <ellipse cx="${pts[0][0]+4}" cy="${taillightY}" rx="6" ry="4.5" fill="#e23b3b" stroke="#8f1f1f" stroke-width="1"/>
+    ${wheelSVG(70, wheelY, wheelR)}
+    ${wheelSVG(240, wheelY, wheelR)}
+  </svg>`;
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+
+function startChapter(key){
+  current = CHAPTERS[key];
+  currentLog = [];
+  schedule = buildSchedule(current.n, current.changeTrial, current.pBefore, current.pAfter);
+  idx = 0;
+  document.getElementById('instr-title').textContent = current.title;
+  document.getElementById('instr-text').textContent = current.instrText;
+  document.getElementById('instr-labels').textContent = isMobile
+    ? `Buttons: "${current.labelYes}" vs "${current.labelNo}"`
+    : `Buttons: "${current.labelYes}" (E) vs "${current.labelNo}" (I)`;
+  document.getElementById('stimulus-area').classList.toggle('road-mode', !!current.animated);
+  showScreen('instructions');
+}
+
+function beginTrials(){
+  showScreen('trial');
+  document.getElementById('btn-yes').innerHTML = current.labelYes + (isMobile ? '' : ' <span class="hotkey">(E)</span>');
+  document.getElementById('btn-no').innerHTML = current.labelNo + (isMobile ? '' : ' <span class="hotkey">(I)</span>');
+  nextTrial();
+}
+
+function ensureRoadScene(){
+  const container = document.getElementById('stimulus-area');
+  if(!container.querySelector('.road-scene')){
+    container.innerHTML = `<div class="road-scene"><div class="sky"></div><div class="ground"></div><div class="road"><div class="lane"></div></div></div>`;
+  }
+  return container.querySelector('.road-scene');
+}
+
+function nextTrial(){
+  if(idx >= schedule.length){ finishChapter(); return; }
+  pendingLevel = schedule[idx];
+  trialStart = performance.now();
+
+  if(current.animated){
+    const scene = ensureRoadScene();
+    const old = scene.querySelector('.car-el');
+    if(old) old.remove();
+    scene.insertAdjacentHTML('beforeend', current.render(pendingLevel));
+  } else {
+    document.getElementById('stimulus-area').innerHTML = current.render(pendingLevel);
+  }
+
+  document.getElementById('progress-fill').style.width = (idx/schedule.length*100)+'%';
+  document.getElementById('trial-counter').textContent = `Trial ${idx+1} / ${schedule.length}`;
+}
+
+function respond(isYes){
+  const rt = performance.now() - trialStart;
+  currentLog.push({trial: idx, level: pendingLevel, resp: isYes?1:0, rt});
+  idx++;
+
+  if(current.animated){
+    const el = document.querySelector('#stimulus-area .car-el');
+    if(el){
+      el.classList.add('drive-out');
+      setTimeout(nextTrial, 400);
+      return;
+    }
+  }
+  nextTrial();
+}
+
+function skipAllTrials(){
+  if(!current || idx >= schedule.length) return;
+  while(idx < schedule.length){
+    const level = schedule[idx];
+    const p = 1/(1+Math.exp(-6*(level-0.5)));
+    const isYes = Math.random() < p;
+    currentLog.push({trial: idx, level, resp: isYes?1:0, rt: 0, synthetic:true});
+    idx++;
+  }
+  const windows = computeWindows(currentLog, 30, 10);
+  const reveal = computeReveal(current, windows);
+  chapterResults[current.id] = {log: currentLog, windows, config: current, ...reveal};
+  sendChapterDataToSheet(current, currentLog);
+  afterReveal();
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.repeat) return;
+  const key = e.key.toLowerCase();
+  if(key === 's'){ skipAllTrials(); return; }
+  if(isMobile) return;
+  if(document.querySelector('.screen.active').id !== 'screen-trial') return;
+  if(key === 'e') respond(true);
+  else if(key === 'i') respond(false);
+});
+
+function computeReveal(config, windows){
+  const baseline = windows.filter(w=>w.center < config.changeTrial);
+  const post = windows.filter(w=>w.center >= config.changeTrial);
+  const avg = arr => arr.reduce((s,w)=>s+w.pse,0)/arr.length;
+  const baselinePSE = baseline.length ? avg(baseline) : 0.5;
+  const postPSE = post.length ? avg(post) : 0.5;
+  return {baselinePSE, postPSE, drift: baselinePSE - postPSE};
+}
+
+function finishChapter(){
+  const windows = computeWindows(currentLog, 30, 10);
+  const reveal = computeReveal(current, windows);
+  chapterResults[current.id] = {log: currentLog, windows, config: current, ...reveal};
+  sendChapterDataToSheet(current, currentLog);
+  renderReveal(current, windows, reveal);
+  showScreen('reveal');
+}
+
+function renderReveal(config, windows, reveal){
+  document.getElementById('reveal-title').textContent = `${config.title} — your drift`;
+  document.getElementById('reveal-chart').innerHTML = renderChart(config, windows);
+
+  const {baselinePSE, postPSE, drift} = reveal;
+
+  document.getElementById('reveal-stats').innerHTML = `
+    <div class="stat-box"><div class="num">${baselinePSE.toFixed(2)}</div><div class="label">Boundary before the shift</div></div>
+    <div class="stat-box"><div class="num">${postPSE.toFixed(2)}</div><div class="label">Boundary after the shift</div></div>
+    <div class="stat-box"><div class="num">${drift>=0?'+':''}${drift.toFixed(2)}</div><div class="label">Drift toward "${config.rareLabel}"</div></div>
+  `;
+
+  let text;
+  if(drift > 0.03){
+    text = `Your idea of "${config.rareLabel}" expanded: once true ${config.rareLabel}s got rare, you started calling more borderline ${config.commonLabel}-leaning items "${config.rareLabel}" too — your boundary moved by about ${drift.toFixed(2)} on a 0–1 scale.`;
+  } else if(drift < -0.03){
+    text = `Your boundary moved the other way this session (${drift.toFixed(2)}) — not the typical direction, but single-session data is noisy.`;
+  } else {
+    text = `Your boundary held fairly steady this session. The published effect is an average across many participants — plenty of individual sessions show little to no shift.`;
+  }
+  document.getElementById('reveal-text').textContent = text;
+  document.getElementById('reveal-continue').textContent =
+    config.id === 'ch1' ? 'Continue to Chapter 2' : 'Continue';
+}
+
+function renderChart(config, windows){
+  const W=640,H=300, mL=50,mR=20,mT=20,mB=40;
+  const plotW=W-mL-mR, plotH=H-mT-mB;
+  const nTrials = config.n, changeTrial = config.changeTrial;
+  const x = t => mL + (t/nTrials)*plotW;
+  const y = lvl => mT + (1-lvl)*plotH;
+
+  const pts = windows.map(w=>`${x(w.center)},${y(w.pse)}`).join(' ');
+  const dots = windows.map(w=>`<circle cx="${x(w.center)}" cy="${y(w.pse)}" r="3.5" fill="var(--accent)"/>`).join('');
+
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="background:#ffffff;border:1px solid #aaaaaa;border-radius:3px;">
+    <line x1="${mL}" y1="${mT}" x2="${mL}" y2="${H-mB}" stroke="#999999"/>
+    <line x1="${mL}" y1="${H-mB}" x2="${W-mR}" y2="${H-mB}" stroke="#999999"/>
+    <line x1="${x(changeTrial)}" y1="${mT}" x2="${x(changeTrial)}" y2="${H-mB}" stroke="#555555" stroke-dasharray="4 4"/>
+    <line x1="${mL}" y1="${y(0.5)}" x2="${W-mR}" y2="${y(0.5)}" stroke="#bbbbbb" stroke-dasharray="2 4"/>
+    <polyline points="${pts}" fill="none" stroke="#111111" stroke-width="2"/>
+    ${dots}
+    <text x="8" y="${y(1)+4}" fill="#333333" font-size="11">${config.rareLabel}</text>
+    <text x="8" y="${y(0)+4}" fill="#333333" font-size="11">${config.commonLabel}</text>
+    <text x="${x(changeTrial)}" y="14" fill="#555555" font-size="11" text-anchor="middle">prevalence drops</text>
+    <text x="${mL}" y="${H-8}" fill="#333333" font-size="11">trial 0</text>
+    <text x="${W-mR}" y="${H-8}" fill="#333333" font-size="11" text-anchor="end">trial ${nTrials}</text>
+  </svg>`;
+}
+
+function afterReveal(){
+  if(current.id === 'ch1'){
+    startChapter('ch2');
+  } else {
+    showScreen('nfc-intro');
+  }
+}
+
+function renderNFCItems(){
+  const container = document.getElementById('nfc-items');
+  container.innerHTML = NFC_ITEMS.map((item,i)=>`
+    <div class="likert">
+      <p>${item.text}</p>
+      <div class="likert-scale">
+        ${[1,2,3,4,5].map(v=>`
+          <label>
+            <input type="radio" name="nfc${i}" value="${v}">
+            ${v}
+          </label>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+renderNFCItems();
+
+function submitNFC(){
+  const values = [];
+  for(let i=0;i<NFC_ITEMS.length;i++){
+    const checked = document.querySelector(`input[name="nfc${i}"]:checked`);
+    if(!checked){ alert('Please answer all 6 questions before continuing.'); return; }
+    const raw = parseInt(checked.value,10);
+    values.push(NFC_ITEMS[i].reverse ? (6-raw) : raw);
+  }
+  const ageVal = document.getElementById('demo-age').value.trim();
+  const genderVal = document.getElementById('demo-gender').value;
+  if(!ageVal || !genderVal){ alert('Please fill in your age and gender before continuing.'); return; }
+
+  nfcScore = values.reduce((a,b)=>a+b,0)/values.length;
+  demographics.age = ageVal;
+  demographics.gender = genderVal;
+  goToSummary();
+}
+
+function goToSummary(){
+  const ch1 = chapterResults.ch1, ch2 = chapterResults.ch2;
+  let html = '';
+  if(ch1) html += `<div class="stat-box"><div class="num">${ch1.drift>=0?'+':''}${ch1.drift.toFixed(2)}</div><div class="label">Chroma Watch drift</div></div>`;
+  if(ch2) html += `<div class="stat-box"><div class="num">${ch2.drift>=0?'+':''}${ch2.drift.toFixed(2)}</div><div class="label">Motor Pool drift</div></div>`;
+  if(nfcScore !== null) html += `<div class="stat-box"><div class="num">${nfcScore.toFixed(1)}/5</div><div class="label">Need for Cognition (informal)</div></div>`;
+  document.getElementById('summary-stats').innerHTML = html;
+
+  let text = 'Two independent categories — a color and a car body style — pushed through the exact same trick: make one option rare, and the definition of that option quietly stretches to keep catching borderline cases.';
+  if(nfcScore !== null){
+    const avgDrift = ((ch1?ch1.drift:0)+(ch2?ch2.drift:0)) / ((ch1?1:0)+(ch2?1:0) || 1);
+    text += ` Your Need for Cognition score was ${nfcScore.toFixed(1)}/5, alongside an average drift of ${avgDrift.toFixed(2)}. With one session this isn't a real correlation — just your own two numbers to sit next to each other.`;
+  }
+  document.getElementById('summary-text').textContent = text;
+  document.getElementById('summary-code').textContent = sessionId;
+
+  sendRowsToSheet([{
+    timestamp: new Date().toISOString(), sessionId, rowType: 'summary',
+    age: demographics.age || '', gender: demographics.gender || '',
+    nfcScore: nfcScore===null ? '' : nfcScore,
+    ch1Drift: ch1 ? ch1.drift : '', ch2Drift: ch2 ? ch2.drift : '',
+  }]);
+
+  showScreen('summary');
+}
+</script>
+</body>
+</html>
