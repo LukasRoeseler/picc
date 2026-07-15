@@ -6,7 +6,7 @@
 <title>Concept Creep</title>
 <style>
   :root{
-    --bg:#808080; --panel:transparent; --card:#d6d6d6; --text:#111111; --muted:#444444;
+    --bg:#f2f2f2; --panel:transparent; --card:#d6d6d6; --text:#111111; --muted:#444444;
     --accent:#1a1a1a; --accent2:#555555; --good:#1a1a1a; --line:#aaaaaa;
   }
   *{box-sizing:border-box;}
@@ -14,7 +14,9 @@
     margin:0; min-height:100vh; background:var(--bg); color:var(--text);
     font-family: Arial, Helvetica, sans-serif;
     display:flex; justify-content:center; padding:24px 16px;
+    transition: background .15s ease;
   }
+  body.trial-mode{ background:#808080; }
   .app{ width:100%; max-width:720px; }
   .panel{ background:var(--panel); padding:12px; }
   h1{ font-size:1.4em; margin:0 0 8px; font-weight:700; }
@@ -99,7 +101,7 @@
         <span>I have read and understood the information above, and I agree to participate.</span>
       </label>
       <div class="btn-row">
-        <button id="consent-continue" disabled onclick="showScreen('intro')">I Agree &amp; Play</button>
+        <button id="consent-continue" disabled onclick="agreeAndPlay()">I Agree &amp; Play</button>
       </div>
     </section>
 
@@ -253,16 +255,16 @@ const chapterResults = {};
 let nfcScore = null;
 let demographics = { age: null, gender: null };
 
-// Paste your deployed Google Apps Script Web App URL here (Extensions > Apps Script in your
-// Sheet, paste the doPost handler from PICC/sheet-logger.gs.js, Deploy > New deployment >
-// Web app, access "Anyone", copy the resulting /exec URL below). Left blank, no data is sent
-// anywhere — the game still works fully offline.
-const SHEET_WEBHOOK_URL = '';
+// This placeholder is substituted with the real Google Apps Script Web App URL at deploy
+// time by .github/workflows/deploy.yml, which reads it from the SHEET_WEBHOOK_URL repository
+// secret — the real URL is never committed to source control. Opened locally (or if the
+// placeholder is ever left unsubstituted), sendRowsToSheet() below just no-ops.
+const SHEET_WEBHOOK_URL = '__SHEET_WEBHOOK_URL__';
 
 const sessionId = (crypto.randomUUID ? crypto.randomUUID() : ('sid-' + Math.random().toString(36).slice(2) + Date.now()));
 
 function sendRowsToSheet(rows){
-  if(!SHEET_WEBHOOK_URL || !rows || !rows.length) return;
+  if(!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.startsWith('__') || !rows || !rows.length) return;
   fetch(SHEET_WEBHOOK_URL, {
     method: 'POST',
     mode: 'no-cors',
@@ -395,9 +397,26 @@ function renderCar(level){
   </svg>`;
 }
 
+function enterFullscreen(){
+  const el = document.documentElement;
+  try{
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(request){
+      const result = request.call(el);
+      if(result && result.catch) result.catch(()=>{});
+    }
+  }catch(err){}
+}
+
+function agreeAndPlay(){
+  enterFullscreen();
+  showScreen('intro');
+}
+
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
+  document.body.classList.toggle('trial-mode', name === 'trial');
 }
 
 function startChapter(key){
